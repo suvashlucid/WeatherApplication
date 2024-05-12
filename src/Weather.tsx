@@ -1,5 +1,4 @@
- 
- 
+import React, { useState, useEffect, createContext, useContext } from "react";
 import axios from "axios";
 import {
   FaSun,
@@ -8,28 +7,39 @@ import {
   FaSnowflake,
   FaCalendarAlt,
 } from "react-icons/fa";
-import * as bs from "bikram-sambat";
+import { ADToBS } from "bikram-sambat-js";
 
-const currentDate: Date = new Date();
+// Import localization files
+import en from "./en.json";
+import np from "./ne.json";
 
 interface Weather {
   id: number;
   description: string;
 }
+
 interface Main {
   temp: number;
 }
+
 interface ForecastData {
   weather: Weather[];
   main: Main;
 }
 
+const locales: Record<string, Record<string, string>> = {
+  en,
+  np,
+};
+
 const ThemeContext = createContext<{
   darkMode: boolean;
   toggleTheme: () => void;
+  locale: { [key: string]: string };
 }>({
   darkMode: false,
   toggleTheme: () => {},
+  locale: en, // Default locale is English
 });
 
 const Weather: React.FC = () => {
@@ -44,31 +54,26 @@ const Weather: React.FC = () => {
     null
   );
   const [darkMode, setDarkMode] = useState<boolean>(false);
-
-  const cityMap: { [key: string]: string } = {
-    पोखरा: "Pokhara",
-    काठमाडौं: "Kathmandu",
-    विराटनगर: "Biratnagar",
-    बेनीघाट: "Bhaktapur",
-  };
+  const [currentDate, setCurrentDate] = useState<string>(); // State to store the current date
+  const [locale, setLocale] = useState<Record<string, string>>(en); // State to store the current locale
 
   const weatherDescriptionMap: {
     [key: string]: { icon: JSX.Element; label: string };
   } = {
-    "few clouds": { icon: <FaCloud size={50} />, label: "बादल" },
-    "scattered clouds": { icon: <FaCloud size={50} />, label: "बादल" },
-    "broken clouds": { icon: <FaCloud size={50} />, label: "बादल" },
-    "overcast clouds": { icon: <FaCloud size={50} />, label: "बादल" },
-    "light rain": { icon: <FaCloudRain size={50} />, label: "बर्सात" },
-    "moderate rain": { icon: <FaCloudRain size={50} />, label: "बर्सात" },
+    "few clouds": { icon: <FaCloud size={50} />, label: locale.cloudy },
+    "scattered clouds": { icon: <FaCloud size={50} />, label: locale.cloudy },
+    "broken clouds": { icon: <FaCloud size={50} />, label: locale.cloudy },
+    "overcast clouds": { icon: <FaCloud size={50} />, label: locale.cloudy },
+    "light rain": { icon: <FaCloudRain size={50} />, label: locale.rainy },
+    "moderate rain": { icon: <FaCloudRain size={50} />, label: locale.rainy },
     "heavy intensity rain": {
       icon: <FaCloudRain size={50} />,
-      label: "बर्सात",
+      label: locale.rainy,
     },
-    "light snow": { icon: <FaSnowflake size={50} />, label: "बर्फबारी" },
-    "moderate snow": { icon: <FaSnowflake size={50} />, label: "बर्फबारी" },
-    "heavy snow": { icon: <FaSnowflake size={50} />, label: "बर्फबारी" },
-    "clear sky": { icon: <FaSun size={50} />, label: "स्पष्ट" },
+    "light snow": { icon: <FaSnowflake size={50} />, label: locale.snowy },
+    "moderate snow": { icon: <FaSnowflake size={50} />, label: locale.snowy },
+    "heavy snow": { icon: <FaSnowflake size={50} />, label: locale.snowy },
+    "clear sky": { icon: <FaSun size={50} />, label: locale.clear },
   };
 
   useEffect(() => {
@@ -78,6 +83,13 @@ const Weather: React.FC = () => {
       setTypingTimeout(timeout);
     }
   }, [cityName]);
+
+  useEffect(() => {
+    const fetchDate = new Date();
+    const convertedDate = ADToBS(fetchDate);
+
+    setCurrentDate(convertedDate); // Update current date when component mounts
+  }, []);
 
   const fetchWeather = async () => {
     try {
@@ -89,7 +101,7 @@ const Weather: React.FC = () => {
       setCurrentWeather(response.data.list[0]);
       setError(null);
     } catch (error) {
-      setError("शहर फेला परेन");
+      setError(locale.errorCityNotFound);
       setForecastData([]);
       setCurrentWeather(null);
     }
@@ -98,13 +110,15 @@ const Weather: React.FC = () => {
   const handleSearch = () => setCityName(searchCity);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setSearchCity(e.target.value);
-  const convertToBikramSambat = (gregorianDate: Date): string =>
-    bs.toBik_text(gregorianDate.toISOString().split("T")[0]);
 
   const toggleTheme = () => setDarkMode(!darkMode);
 
+  const changeLanguage = (language: string) => {
+    setLocale(locales[language]);
+  };
+
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ darkMode, toggleTheme, locale }}>
       <div
         className={`p-4 md:p-20 ${darkMode ? "bg-gray-900" : "bg-gray-300"}`}
       >
@@ -112,7 +126,7 @@ const Weather: React.FC = () => {
           <div className="flex items-center">
             <FaCalendarAlt size={20} className="mr-2" />
             <span className={`ml-2 ${darkMode ? "text-white" : "text-black"}`}>
-              {convertToBikramSambat(currentDate)}
+              {currentDate}
             </span>
           </div>
           <h1
@@ -120,7 +134,7 @@ const Weather: React.FC = () => {
               darkMode && "text-white"
             }`}
           >
-            Weather App
+            {locale.appTitle}
             {currentWeather && (
               <div className="mt-9 object-cover ">
                 {
@@ -130,6 +144,7 @@ const Weather: React.FC = () => {
               </div>
             )}
           </h1>
+          <LanguageSwitcher changeLanguage={changeLanguage} />
         </div>
         <div className="flex flex-col items-center space-y-4">
           <div className="flex items-center">
@@ -137,7 +152,7 @@ const Weather: React.FC = () => {
               type="text"
               value={searchCity}
               onChange={handleInputChange}
-              placeholder="Enter city name"
+              placeholder={locale.searchPlaceholder}
               className={`p-2 mr-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                 darkMode ? "text-white" : "text-black"
               }`}
@@ -148,7 +163,7 @@ const Weather: React.FC = () => {
                 darkMode && "bg-white text-black"
               }`}
             >
-              Search
+              {locale.searchButton}
             </button>
             <DarkModeToggle />
           </div>
@@ -191,14 +206,12 @@ const Weather: React.FC = () => {
                       }
                     </p>
                   </div>
-                  <p className="text-sm mt-2">
-                    {convertToBikramSambat(currentDate)}
-                  </p>
+                  <p className="text-sm mt-2">{currentDate}</p>
                 </div>
               )}
               {forecastData.length > 0 && (
                 <div className="mt-4">
-                  <p className="font-bold">Upcoming 5-hour forecast:</p>
+                  <p className="font-bold">{locale.upcomingForecast}:</p>
                   <div className="flex flex-row flex-wrap justify-center space-x-4">
                     {forecastData
                       .slice(1, 6)
@@ -245,6 +258,28 @@ const DarkModeToggle: React.FC = () => {
     >
       {darkMode ? "Light Mode" : "Dark Mode"}
     </button>
+  );
+};
+
+const LanguageSwitcher: React.FC<{
+  changeLanguage: (lang: string) => void;
+}> = ({ changeLanguage }) => {
+  const { darkMode, locale } = useContext(ThemeContext);
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    changeLanguage(e.target.value);
+  };
+
+  return (
+    <select
+      className={`p-2 bg-${darkMode ? "white" : "black"} text-${
+        darkMode ? "black" : "white"
+      } rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+      onChange={handleLanguageChange}
+    >
+      <option value="en">English</option>
+      <option value="np">नेपाली</option>
+    </select>
   );
 };
 
