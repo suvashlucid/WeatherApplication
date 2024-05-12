@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, createContext, useContext } from "react";
+=======
+ import React, { useState, useEffect, createContext, useContext } from "react";
+>>>>>>> origin/develop
 import axios from "axios";
 import {
   FaSun,
