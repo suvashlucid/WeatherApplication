@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+\import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   FaSun,
@@ -7,6 +7,7 @@ import {
   FaSnowflake,
   FaCalendarAlt,
 } from "react-icons/fa";
+import * as bs from "bikram-sambat";
 
 const currentDate: Date = new Date();
 
@@ -14,11 +15,9 @@ interface Weather {
   id: number;
   description: string;
 }
-
 interface Main {
   temp: number;
 }
-
 interface ForecastData {
   weather: Weather[];
   main: Main;
@@ -32,6 +31,9 @@ const Weather: React.FC = () => {
   );
   const [error, setError] = useState<string | null>(null);
   const [searchCity, setSearchCity] = useState<string>("");
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   const cityMap: { [key: string]: string } = {
     पोखरा: "Pokhara",
@@ -43,55 +45,27 @@ const Weather: React.FC = () => {
   const weatherDescriptionMap: {
     [key: string]: { icon: JSX.Element; label: string };
   } = {
-    "few clouds": {
-      icon: <FaCloud size={50} />,
-      label: "बादल",
-    },
-    "scattered clouds": {
-      icon: <FaCloud size={50} />,
-      label: "बादल",
-    },
-    "broken clouds": {
-      icon: <FaCloud size={50} />,
-      label: "बादल",
-    },
-    "overcast clouds": {
-      icon: <FaCloud size={50} />,
-      label: "बादल",
-    },
-    "light rain": {
-      icon: <FaCloudRain size={50} />,
-      label: "बर्सात",
-    },
-    "moderate rain": {
-      icon: <FaCloudRain size={50} />,
-      label: "बर्सात",
-    },
+    "few clouds": { icon: <FaCloud size={50} />, label: "बादल" },
+    "scattered clouds": { icon: <FaCloud size={50} />, label: "बादल" },
+    "broken clouds": { icon: <FaCloud size={50} />, label: "बादल" },
+    "overcast clouds": { icon: <FaCloud size={50} />, label: "बादल" },
+    "light rain": { icon: <FaCloudRain size={50} />, label: "बर्सात" },
+    "moderate rain": { icon: <FaCloudRain size={50} />, label: "बर्सात" },
     "heavy intensity rain": {
       icon: <FaCloudRain size={50} />,
       label: "बर्सात",
     },
-    "light snow": {
-      icon: <FaSnowflake size={50} />,
-      label: "बर्फबारी",
-    },
-    "moderate snow": {
-      icon: <FaSnowflake size={50} />,
-      label: "बर्फबारी",
-    },
-    "heavy snow": {
-      icon: <FaSnowflake size={50} />,
-      label: "बर्फबारी",
-    },
-    "clear sky": {
-      icon: <FaSun size={50} />,
-      label: "स्पष्ट",
-    },
+    "light snow": { icon: <FaSnowflake size={50} />, label: "बर्फबारी" },
+    "moderate snow": { icon: <FaSnowflake size={50} />, label: "बर्फबारी" },
+    "heavy snow": { icon: <FaSnowflake size={50} />, label: "बर्फबारी" },
+    "clear sky": { icon: <FaSun size={50} />, label: "स्पष्ट" },
   };
 
   useEffect(() => {
     if (cityName) {
-      fetchWeather();
+      if (typingTimeout) clearTimeout(typingTimeout);
+      const timeout = setTimeout(() => fetchWeather(), 1000);
+      setTypingTimeout(timeout);
     }
   }, [cityName]);
 
@@ -101,7 +75,6 @@ const Weather: React.FC = () => {
       const response = await axios.get(
         `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&appid=${apiKey}`
       );
-
       setForecastData(response.data.list);
       setCurrentWeather(response.data.list[0]);
       setError(null);
@@ -112,27 +85,18 @@ const Weather: React.FC = () => {
     }
   };
 
-  const handleCitySelect = (selectedCity: string) => {
-    const englishCityName = cityMap[selectedCity];
-    if (englishCityName) {
-      setCityName(englishCityName);
-    }
-  };
-
-  const handleSearch = () => {
-    setCityName(searchCity);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = () => setCityName(searchCity);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setSearchCity(e.target.value);
-  };
+  const convertToBikramSambat = (gregorianDate: Date): string =>
+    bs.toBik_text(gregorianDate.toISOString().split("T")[0]);
 
   return (
     <div className="p-4 md:p-20 bg-gray-300">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center">
           <FaCalendarAlt size={20} className="mr-2" />
-          {currentDate.toLocaleDateString()}
+          <span className="ml-2">{convertToBikramSambat(currentDate)}</span>
         </div>
         <h1 className="text-2xl md:text-4xl font-bold text-green-500">
           Weather App
@@ -146,7 +110,6 @@ const Weather: React.FC = () => {
           )}
         </h1>
       </div>
-
       <div className="flex flex-col items-center space-y-4">
         <div className="flex items-center">
           <input
@@ -163,7 +126,6 @@ const Weather: React.FC = () => {
             Search
           </button>
         </div>
-
         {error ? (
           <p className="text-red-500">{error}</p>
         ) : (
@@ -194,9 +156,11 @@ const Weather: React.FC = () => {
                     }
                   </p>
                 </div>
+                <p className="text-sm mt-2">
+                  {convertToBikramSambat(currentDate)}
+                </p>
               </div>
             )}
-
             {forecastData.length > 0 && (
               <div className="mt-4">
                 <p className="font-bold">Upcoming 5-hour forecast:</p>
