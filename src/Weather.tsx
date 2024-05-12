@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+ 
  
 import axios from "axios";
 import {
