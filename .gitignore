@@ -25,13 +25,9 @@ dist-ssr
 .env.DS_Store
 /Users/suvash/Weather-assignment/Weather/.env
 node_modules
-pnpm-lock.yaml
-  postcss.config.js
- tsconfig.node.json
-public
-.eslintrc.cjs
-tailwind.config.js
-vite.config.ts
-tsconfig.json
-        tsconfig.node.json
-          tsconfig.node.json
+  
+ .vscode/*
+ .vscode/extensions.json
+ .DS_Store
+ 
+ 

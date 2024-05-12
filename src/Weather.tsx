@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import axios from "axios";
 import {
   FaSun,
@@ -23,6 +23,14 @@ interface ForecastData {
   main: Main;
 }
 
+const ThemeContext = createContext<{
+  darkMode: boolean;
+  toggleTheme: () => void;
+}>({
+  darkMode: false,
+  toggleTheme: () => {},
+});
+
 const Weather: React.FC = () => {
   const [cityName, setCityName] = useState<string>("");
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
@@ -34,6 +42,7 @@ const Weather: React.FC = () => {
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   const cityMap: { [key: string]: string } = {
     पोखरा: "Pokhara",
@@ -91,107 +100,152 @@ const Weather: React.FC = () => {
   const convertToBikramSambat = (gregorianDate: Date): string =>
     bs.toBik_text(gregorianDate.toISOString().split("T")[0]);
 
+  const toggleTheme = () => setDarkMode(!darkMode);
+
   return (
-    <div className="p-4 md:p-20 bg-gray-300">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center">
-          <FaCalendarAlt size={20} className="mr-2" />
-          <span className="ml-2">{convertToBikramSambat(currentDate)}</span>
-        </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-green-500">
-          Weather App
-          {currentWeather && (
-            <div className="mt-9 object-cover ">
-              {
-                weatherDescriptionMap[currentWeather.weather[0].description]
-                  .icon
-              }
-            </div>
-          )}
-        </h1>
-      </div>
-      <div className="flex flex-col items-center space-y-4">
-        <div className="flex items-center">
-          <input
-            type="text"
-            value={searchCity}
-            onChange={handleInputChange}
-            placeholder="Enter city name"
-            className="p-2 mr-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-          <button
-            onClick={handleSearch}
-            className="p-2 bg-green-500 text-white rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+      <div
+        className={`p-4 md:p-20 ${darkMode ? "bg-gray-900" : "bg-gray-300"}`}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <FaCalendarAlt size={20} className="mr-2" />
+            <span className={`ml-2 ${darkMode ? "text-white" : "text-black"}`}>
+              {convertToBikramSambat(currentDate)}
+            </span>
+          </div>
+          <h1
+            className={`text-2xl md:text-4xl font-bold text-green-500 ${
+              darkMode && "text-white"
+            }`}
           >
-            Search
-          </button>
-        </div>
-        {error ? (
-          <p className="text-red-500">{error}</p>
-        ) : (
-          <>
+            Weather App
             {currentWeather && (
-              <div className="p-8 bg-green-500 rounded-xl shadow-xl text-white text-center">
-                <div className="flex items-center justify-center mb-4">
-                  {weatherDescriptionMap[currentWeather.weather[0].description]
-                    .icon && (
-                    <div className="mr-4">
+              <div className="mt-9 object-cover ">
+                {
+                  weatherDescriptionMap[currentWeather.weather[0].description]
+                    .icon
+                }
+              </div>
+            )}
+          </h1>
+        </div>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="flex items-center">
+            <input
+              type="text"
+              value={searchCity}
+              onChange={handleInputChange}
+              placeholder="Enter city name"
+              className={`p-2 mr-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                darkMode ? "text-white" : "text-black"
+              }`}
+            />
+            <button
+              onClick={handleSearch}
+              className={`p-2 bg-green-500 text-white rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                darkMode && "bg-white text-black"
+              }`}
+            >
+              Search
+            </button>
+            <DarkModeToggle />
+          </div>
+          {error ? (
+            <p className={`text-red-500 ${darkMode && "text-white"}`}>
+              {error}
+            </p>
+          ) : (
+            <>
+              {currentWeather && (
+                <div
+                  className={`p-8 rounded-xl shadow-xl text-center ${
+                    darkMode
+                      ? "bg-gray-800 text-white"
+                      : "bg-green-500 text-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-center mb-4">
+                    {weatherDescriptionMap[
+                      currentWeather.weather[0].description
+                    ].icon && (
+                      <div className="mr-4">
+                        {
+                          weatherDescriptionMap[
+                            currentWeather.weather[0].description
+                          ].icon
+                        }
+                      </div>
+                    )}
+                    <p className="text-4xl">
+                      {Math.round(currentWeather.main.temp - 273.15)}°C
+                    </p>
+                  </div>
+                  <div className="text-3xl mt-2">
+                    <p className="text-lg">
                       {
                         weatherDescriptionMap[
                           currentWeather.weather[0].description
-                        ].icon
+                        ].label
                       }
-                    </div>
-                  )}
-                  <p className="text-4xl">
-                    {Math.round(currentWeather.main.temp - 273.15)}°C
+                    </p>
+                  </div>
+                  <p className="text-sm mt-2">
+                    {convertToBikramSambat(currentDate)}
                   </p>
                 </div>
-                <div className="text-3xl mt-2">
-                  <p className="text-lg">
-                    {
-                      weatherDescriptionMap[
-                        currentWeather.weather[0].description
-                      ].label
-                    }
-                  </p>
+              )}
+              {forecastData.length > 0 && (
+                <div className="mt-4">
+                  <p className="font-bold">Upcoming 5-hour forecast:</p>
+                  <div className="flex flex-row flex-wrap justify-center space-x-4">
+                    {forecastData
+                      .slice(1, 6)
+                      .map((forecast: ForecastData, index: number) => (
+                        <div
+                          key={index}
+                          className={`p-4 rounded-md shadow-md text-center ${
+                            darkMode
+                              ? "bg-gray-800 text-white"
+                              : "bg-white text-black"
+                          }`}
+                        >
+                          <p className="text-2xl mt-4">
+                            {Math.round(forecast.main.temp - 273.15)}°C
+                          </p>
+                          <p className="text-lg mt-2">
+                            {
+                              weatherDescriptionMap[
+                                forecast.weather[0].description
+                              ].label
+                            }
+                          </p>
+                        </div>
+                      ))}
+                  </div>
                 </div>
-                <p className="text-sm mt-2">
-                  {convertToBikramSambat(currentDate)}
-                </p>
-              </div>
-            )}
-            {forecastData.length > 0 && (
-              <div className="mt-4">
-                <p className="font-bold">Upcoming 5-hour forecast:</p>
-                <div className="flex flex-row flex-wrap justify-center space-x-4">
-                  {forecastData
-                    .slice(1, 6)
-                    .map((forecast: ForecastData, index: number) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-white rounded-md shadow-md text-center"
-                      >
-                        <p className="text-2xl mt-4">
-                          {Math.round(forecast.main.temp - 273.15)}°C
-                        </p>
-                        <p className="text-lg mt-2">
-                          {
-                            weatherDescriptionMap[
-                              forecast.weather[0].description
-                            ].label
-                          }
-                        </p>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </ThemeContext.Provider>
   );
 };
 
+const DarkModeToggle: React.FC = () => {
+  const { darkMode, toggleTheme } = useContext(ThemeContext);
+  return (
+    <button
+      onClick={toggleTheme}
+      className={`p-2 bg-${darkMode ? "white" : "black"} text-${
+        darkMode ? "black" : "white"
+      } rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+    >
+      {darkMode ? "Light Mode" : "Dark Mode"}
+    </button>
+  );
+};
+
+export { DarkModeToggle };
 export default Weather;
